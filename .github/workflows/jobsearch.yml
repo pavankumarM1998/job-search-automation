@@ -1,0 +1,38 @@
+name: Daily Job Search Automation
+
+on:
+  schedule:
+    # Runs at 7:00 AM IST → IST is UTC+5:30, so UTC time = 1:30 AM
+    - cron: '30 1 * * *'
+  workflow_dispatch:  # allows you to run it manually from the Actions tab
+
+jobs:
+  job_search:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run Job Search Script
+      env:
+        EMAIL_USER: ${{ secrets.EMAIL_USER }}
+        EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        SCRAPFLY_KEY: ${{ secrets.SCRAPFLY_KEY }}
+      run: python job_search.py
+
+    - name: Commit job results
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add job_results/
+        git commit -m "Add job results for $(date +'%Y-%m-%d')" || echo "No changes to commit"
+        git push
